@@ -1,0 +1,121 @@
+# Upload R code here
+
+setwd("C:/Users/nstru/OneDrive/Documents/Academics/Hamline/Summer 2023/MSBA 8170/Case Study")
+
+# Import libraries
+library(randomForest)
+library(tree)
+
+# Data cleaning: Removed top 28 rows except column headers, removed Description
+# column causing issues with .csv import
+vehicles <- read.csv("case_study_data.csv")
+# Update the DATE column to date datatype
+vehicles$DATE <- as.Date(vehicles$DATE, format = "%y/%m/%d/")
+
+# Summary Statistics
+summary(vehicles)
+str(vehicles)
+sapply(vehicles, var)
+
+plot(vehicles)
+
+# Create a graph of price trends for new and used cars
+par(mfrow=c(1,2))
+plot(vehicles$cpi_used_cars, type = "l", xlab = "Months Since 1/1/2010",
+     ylab = "Used Car CPI")
+plot(vehicles$cpi_new_cars, type = "l", xlab = "Months Since 1/1/2010",
+     ylab = "New Car CPI")
+
+# Create a covariance matrix
+cov(vehicles[-1])
+
+# Perform a basic linear regression with all variables
+fit.lm = lm(cpi_used_cars ~ ., data = vehicles[-1])
+summary(fit.lm)
+fit.lm_aov <- aov(cpi_used_cars ~ ., data = vehicles[-1])
+
+# Perform a basic mlr on the data set and response variable
+vehicles.mlr = lm(cpi_used_cars ~ ., data = vehicles)
+summary(vehicles.mlr)
+
+# Split the data into a testing and a training set
+set.seed(1)
+train_data <- sample(1:nrow(vehicles), nrow(vehicles)/2)
+vehicles.train <- vehicles[train_data, ]
+vehicles.test <- vehicles[-train_data, ]
+
+# Fit a regression tree to the training set
+vehicles.tree <- tree(cpi_used_cars ~ ., data = vehicles.train)
+plot(vehicles.tree)
+text(vehicles.tree, pretty = 1)
+# Calculate the test MSE
+vehicles.pred <- predict(vehicles.tree, newdata = vehicles.test)
+mean((vehicles.pred - vehicles.test$cpi_used_cars)^2)
+# The test MSE is 47.49923
+
+# Use cross-validation in order to determine the optimal level of tree
+# complexity. Does pruning the tree improve the test MSE?
+vehicles.cv <- cv.tree(vehicles.tree)
+# Plot the resulting tree
+par(mfrow = c(1, 2))
+plot(vehicles.cv$size, vehicles.cv$dev, type = "b")
+# Looking at the graph, the best size estimate is 2
+prune.vehicles <- prune.tree(vehicles.tree, best = 2)
+plot(prune.vehicles)
+text(prune.vehicles, pretty = 0)
+# Calculate the new MSE after pruning
+prune.pred <- predict(prune.vehicles, newdata = vehicles.test)
+mean((prune.pred - vehicles.test$cpi_used_cars)^2)
+# The updated MSE after pruning is 54.75645, which shows that pruning actually
+# increased the MSE in this case.
+
+# Use the bagging approach in order to analyze this data. What test MSE do 
+# you obtain? Use the importance() function to determine which variables are
+# most important.
+bag.vehicles <- randomForest(cpi_used_cars ~ ., data = vehicles.train,
+                             mtry = 10, importance = TRUE)
+bag.vehicles
+# Calculate the test MSE
+bag.pred <- predict(bag.vehicles, newdata = vehicles.test)
+mean((bag.pred - vehicles.test$cpi_used_cars)^2)
+# The resulting test MSE is 15.12435, which is substantially lower than both the
+# MSE from the original regression tree and the one obtained from the pruned 
+# tree. The most important variables can be found using:
+importance(bag.vehicles)
+# From this function, the most important factors on used car prices are 
+# cpi_maintain, real_imp_all, cpi_new_cars, and real_ex_all, in that order.
+
+# Use random forests to analyze this data. What test MSE do you obtain? Use
+# the importance() function to determine which variables are most important. 
+# Describe the effect of m, the number of variables considered at each split,
+# on the error rate obtained.
+set.seed(1)
+randfor.vehicles1 <- randomForest(cpi_used_cars ~ ., data = vehicles.train, 
+                                  mtry = 1, importance = TRUE)
+randfor.vehicles1.pred <- predict(randfor.vehicles1, newdata = vehicles.test)
+mean((randfor.vehicles1.pred - vehicles.test$cpi_used_cars)^2)
+# The test MSE obtained from the random forest with m = 1 is 24.80072.
+randfor.vehicles2 <- randomForest(cpi_used_cars ~ ., data = vehicles.train, 
+                                  mtry = 2, importance = TRUE)
+randfor.vehicles2.pred <- predict(randfor.vehicles2, newdata = vehicles.test)
+mean((randfor.vehicles2.pred - vehicles.test$cpi_used_cars)^2)
+# The test MSE obtained from the random forest with m = 2 is 15.07258, which is
+# lower than the MSE obtained when m = 1.
+randfor.vehicles3 <- randomForest(cpi_used_cars ~ ., data = vehicles.train, 
+                                  mtry = 3, importance = TRUE)
+randfor.vehicles3.pred <- predict(randfor.vehicles3, newdata = vehicles.test)
+mean((randfor.vehicles3.pred - vehicles.test$cpi_used_cars)^2)
+# The test MSE obtained from the random forest with m = 3 is 13.18136, which is
+# lower than the MSE obtained with either m = 1 or m = 2.
+randfor.vehicles6 <- randomForest(cpi_used_cars ~ ., data = vehicles.train, 
+                                  mtry = 6, importance = TRUE)
+randfor.vehicles6.pred <- predict(randfor.vehicles6, newdata = vehicles.test)
+mean((randfor.vehicles6.pred - vehicles.test$cpi_used_cars)^2)
+# The test MSE obtained from the random forest with m = 6 is 13.0593, which is
+# lower than the MSE obtained with either m = 1, m = 2, or m = 3.
+randfor.vehicles9 <- randomForest(cpi_used_cars ~ ., data = vehicles.train, 
+                                  mtry = 9, importance = TRUE)
+randfor.vehicles9.pred <- predict(randfor.vehicles9, newdata = vehicles.test)
+mean((randfor.vehicles9.pred - vehicles.test$cpi_used_cars)^2)
+# The test MSE obtained from the random forest with m = 6 is 14.99558, which is
+# lower than the MSE obtained with either m = 1, m = 2, m = 3, or m = 6.
