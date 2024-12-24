@@ -1,0 +1,38 @@
+library(RMySQL)
+
+mysqlconnection = dbConnect(RMySQL::MySQL(),
+                            dbname='wnba',
+                            host='localhost',
+                            port=3306,
+                            user='root',
+                            password='root')
+
+# displays the tables available in this database
+dbListTables(mysqlconnection) 
+
+# Import tables as data.frames
+# Offstat
+offstat_sql = dbSendQuery(mysqlconnection, "SELECT * FROM offstat")
+offstat = fetch(offstat_sql)
+
+# Defstat
+defstat_sql = dbSendQuery(mysqlconnection, "SELECT * FROM defstat")
+defstat = fetch(defstat_sql)
+
+# Roster
+roster_sql = dbSendQuery(mysqlconnection, "SELECT * FROM roster")
+roster = fetch(roster_sql)
+
+# Employment
+emp_sql = dbSendQuery(mysqlconnection, "SELECT * FROM employment")
+employment = fetch(emp_sql)
+
+all1 <- merge(roster, employment, by = "Player")
+all2 <- merge(all1, offstat, by = "Player")
+allstats <- merge(all2, defstat, by = "Player")
+
+# Create a plot of salary compared to average points per game
+plot(allstats$Height, allstats$Salary, main = "Salary by Height", 
+     xlab = "Height", ylab = "Salary", )
+# Add fit lines
+abline(lm(allstats$Salary~allstats$Height), col="red") # regression line (y~x)
