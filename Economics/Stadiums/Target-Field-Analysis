@@ -1,0 +1,25 @@
+# Load necessary library
+library(ggplot2)
+
+# Data
+year <- c(2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010)
+total_attendance <- c(1801128, 1310199, 0, 2303299, 1959197, 2051279, 1963912, 2220054, 2250606, 2477644, 2776354, 3168116, 3223640)
+average_attendance <- c(22236, 16175, 0, 28436, 24188, 25324, 24246, 27408, 27785, 30588, 34276, 39113, 39798)
+
+# Create a data frame
+data <- data.frame(year, total_attendance, average_attendance)
+
+# Plot
+ggplot(data, aes(x = year)) +
+  geom_line(aes(y = total_attendance, colour = "Total Attendance")) +
+  geom_line(aes(y = average_attendance, colour = "Average Attendance")) +
+  scale_y_continuous(
+    "Average Attendance per Game",
+    sec.axis = sec_axis(~ . / 1000, name = "Total Attendance (in millions)")
+  ) +
+  scale_colour_manual("", 
+                      values = c("Total Attendance" = "blue", "Average Attendance" = "orange")) +
+  theme_minimal() +
+  labs(title = "Minnesota Twins Attendance Data", x = "Year") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_x_reverse(breaks = year) # Invert the x-axis
