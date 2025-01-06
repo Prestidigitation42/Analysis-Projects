@@ -14,7 +14,7 @@ library(tidyverse)
 
 Analysis of 20,000 chess games on LiChess
 
-```{r setup, echo=FALSE}
+```{r, echo=FALSE}
 chess <- read.csv("chess.csv")
 head(chess, 5)
 # Create a histogram showing the distribution of turns in these games
