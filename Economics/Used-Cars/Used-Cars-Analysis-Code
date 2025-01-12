@@ -1,14 +1,10 @@
-# Upload R code here
-
-setwd("C:/Users/nstru/OneDrive/Documents/Academics/Hamline/Summer 2023/MSBA 8170/Case Study")
-
 # Import libraries
 library(randomForest)
 library(tree)
 
 # Data cleaning: Removed top 28 rows except column headers, removed Description
 # column causing issues with .csv import
-vehicles <- read.csv("case_study_data.csv")
+vehicles <- read.csv("used_cars_data.csv")
 # Update the DATE column to date datatype
 vehicles$DATE <- as.Date(vehicles$DATE, format = "%y/%m/%d/")
 
