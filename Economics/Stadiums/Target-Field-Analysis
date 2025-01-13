@@ -1,25 +1,54 @@
-# Load necessary library
+# Load ggplot2 library
 library(ggplot2)
+library(forecast)
 
-# Data
-year <- c(2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010)
-total_attendance <- c(1801128, 1310199, 0, 2303299, 1959197, 2051279, 1963912, 2220054, 2250606, 2477644, 2776354, 3168116, 3223640)
-average_attendance <- c(22236, 16175, 0, 28436, 24188, 25324, 24246, 27408, 27785, 30588, 34276, 39113, 39798)
+# Sales tax data
+sales_tax_data <- data.frame(
+  Year = c(2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010),
+  SalesTax = c(3831874.29, 2787397.31, 0.00, 4900304.79, 4168257.57, 4364021.61, 4178252.57,
+               4723152.12, 4788119.59, 5271153.57, 5906697.39, 6740245.51, 6858289.85)
+)
 
-# Create a data frame
-data <- data.frame(year, total_attendance, average_attendance)
-
-# Plot
-ggplot(data, aes(x = year)) +
-  geom_line(aes(y = total_attendance, colour = "Total Attendance")) +
-  geom_line(aes(y = average_attendance, colour = "Average Attendance")) +
-  scale_y_continuous(
-    "Average Attendance per Game",
-    sec.axis = sec_axis(~ . / 1000, name = "Total Attendance (in millions)")
-  ) +
-  scale_colour_manual("", 
-                      values = c("Total Attendance" = "blue", "Average Attendance" = "orange")) +
+# Create a bar plot
+ggplot(sales_tax_data, aes(x = factor(Year), y = SalesTax)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
   theme_minimal() +
-  labs(title = "Minnesota Twins Attendance Data", x = "Year") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  scale_x_reverse(breaks = year) # Invert the x-axis
+  labs(title = "Sales Tax per Year", x = "Year", y = "Sales Tax ($)") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) # Rotate x-axis labels for better readability
+
+# Display the plot
+ggsave("sales_tax_per_year.png", width = 10, height = 6, dpi = 300)
+
+
+# Prepare the dataset
+data <- data.frame(
+  Year = c(2010:2022),
+  SalesTax = c(6858289.85, 6740245.51, 5906697.39, 5271153.57, 4788119.59, 4723152.12, 
+               4178252.57, 4364021.61, 4168257.57, 4900304.79, 0.00, 2787397.31, 3831874.29)
+)
+
+# Split the data into two periods
+data_before_2020 <- subset(data, Year < 2020)
+data_after_2020 <- subset(data, Year > 2020)
+
+# Model the data with linear regression
+model_before_2020 <- lm(SalesTax ~ Year, data = data_before_2020)
+model_after_2020 <- lm(SalesTax ~ Year, data = data_after_2020)
+
+# Predict future sales tax for 25 years
+future_years_before_2020 <- data.frame(Year = (2023:2047))
+future_years_after_2020 <- data.frame(Year = (2023:2047))
+
+predictions_before_2020 <- predict(model_before_2020, newdata = future_years_before_2020)
+predictions_after_2020 <- predict(model_after_2020, newdata = future_years_after_2020)
+
+# Combine predictions (considering the different reliability)
+# Since the after 2020 model might be less reliable, we'll focus on the before 2020 predictions
+predictions <- predictions_before_2020
+
+# Plot the results
+plot(data$Year, data$SalesTax, main = "Sales Tax Income Forecast", xlab = "Year", ylab = "Sales Tax ($)",
+     xlim = c(2010, 2047), ylim = c(0, max(data$SalesTax, predictions)), type = "o", col = "blue")
+lines(future_years_before_2020$Year, predictions, col = "red", type = "o")
+
+legend("topright", legend = c("Actual Sales Tax", "Forecasted Sales Tax"), col = c("blue", "red"), lty = 1)
