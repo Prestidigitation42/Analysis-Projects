@@ -1,0 +1,102 @@
+# Load necessary libraries
+library(corrplot)
+library(ggplot2)
+library(readr)
+
+# Load the .csv file into a dataframe
+covtype <- read_csv("covtype.csv")
+
+# Print the type of each variable in the dataframe
+print(sapply(covtype, class))
+
+# Check for duplicate rows in the covtype dataframe
+duplicates <- duplicated(covtype)
+
+# Report the number of duplicate rows found
+cat("Number of duplicate rows:", sum(duplicates), "\n")
+
+# Check for any NA values in the dataframe
+na_presence <- colSums(is.na(covtype))
+
+# Report the columns with NA values and their counts
+cat("Columns with NA values and their counts:\n")
+print(na_presence[na_presence > 0])
+
+# List of specific hillshade columns to plot
+hillshade_columns <- c("Hillshade_9am", "Hillshade_Noon", "Hillshade_3pm")
+
+# Create a histogram for each specified hillshade column
+for(col_name in hillshade_columns) {
+  # Create the histogram using ggplot
+  p <- ggplot(covtype, aes(x = .data[[col_name]])) + 
+    geom_histogram(binwidth = 5, fill = "blue", color = "black") + 
+    ggtitle(paste("Histogram of", col_name)) +
+    xlab(col_name) + 
+    ylab("Frequency")
+  
+  # Display the histogram
+  print(p)
+}
+
+# Specify the columns to be included in the nosoil dataframe
+selected_columns <- c("Elevation", "Aspect", "Slope", 
+                      "Horizontal_Distance_To_Hydrology", "Vertical_Distance_To_Hydrology", 
+                      "Horizontal_Distance_To_Roadways", "Hillshade_9am", "Hillshade_Noon", 
+                      "Hillshade_3pm", "Horizontal_Distance_To_Fire_Points", 
+                      "Wilderness_Area1", "Wilderness_Area2", "Wilderness_Area3", 
+                      "Wilderness_Area4", "Cover_Type")
+
+# Create the nosoil dataframe by selecting only the specified columns
+nosoil <- covtype[selected_columns]
+
+# Print the summary statistics for covtype
+summary_nosoil <- data.frame(
+  Feature = names(nosoil),
+  Count = sapply(nosoil, function(x) sum(!is.na(x))),
+  Mean = round(sapply(nosoil, mean, na.rm = TRUE), 2),
+  SD = round(sapply(nosoil, sd, na.rm = TRUE), 2),
+  Min = round(sapply(nosoil, min, na.rm = TRUE), 2),
+  `1st Qu.` = round(sapply(nosoil, quantile, probs = 0.25, na.rm = TRUE), 2),
+  Median = round(sapply(nosoil, median, na.rm = TRUE), 2),
+  `3rd Qu.` = round(sapply(nosoil, quantile, probs = 0.75, na.rm = TRUE), 2),
+  Max = round(sapply(nosoil, max, na.rm = TRUE), 2)
+)
+
+# Print the summary statistics
+print(summary_nosoil)
+
+summary_stats <- data.frame(
+  Feature = names(covtype),
+  Count = sapply(covtype, function(x) sum(!is.na(x))),
+  Mean = round(sapply(covtype, mean, na.rm = TRUE), 2),
+  SD = round(sapply(covtype, sd, na.rm = TRUE), 2),
+  Min = round(sapply(covtype, min, na.rm = TRUE), 2),
+  `1st Qu.` = round(sapply(covtype, quantile, probs = 0.25, na.rm = TRUE), 2),
+  Median = round(sapply(covtype, median, na.rm = TRUE), 2),
+  `3rd Qu.` = round(sapply(covtype, quantile, probs = 0.75, na.rm = TRUE), 2),
+  Max = round(sapply(covtype, max, na.rm = TRUE), 2)
+)
+
+# Print the summary statistics
+print(summary_stats)
+
+# Create a boxplot for Horizontal_Distance_To_Hydrology
+ggplot(nosoil, aes(y = Horizontal_Distance_To_Hydrology)) + 
+  geom_boxplot(fill = "lightblue", color = "darkblue") + 
+  labs(title = "Horizontal Distance to Hydrology", y = "Horizontal Distance to Hydrology") +
+  theme_minimal()
+
+# Create a boxplot for Vertical_Distance_To_Hydrology
+ggplot(nosoil, aes(y = Vertical_Distance_To_Hydrology)) + 
+  geom_boxplot(fill = "lightblue", color = "darkblue") + 
+  labs(title = "Vertical Distance to Hydrology", y = "Vertical Distance to Hydrology") +
+  theme_minimal()
+
+# Compute the correlation matrix using Pearson's method
+correlation_matrix <- cor(nosoil, method = "pearson", use = "complete.obs")
+
+# Print the correlation matrix
+print(correlation_matrix)
+
+# Visualize the correlation matrix
+corrplot(correlation_matrix, method = "circle")
